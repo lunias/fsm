@@ -27,7 +27,10 @@ const hoursFsm = function(app) {
 const zipCodeQuestion = function(app, fsm) {
     app.rl.question('what is your zip code? ', (zip) => {
         app.user.zip = zip;
-        fsm.prompt(fsm);
+        app.emit('zipUpdated', {
+            user: app.user
+        });
+        fsm.prompt();
     });
 };
 
@@ -144,6 +147,10 @@ app.on("login", function(data) {
 
 app.on("logout", function(data) {
     console.log("got logout event", data);
+});
+
+app.on("zipUpdated", function(data) {
+  console.log("updated user zip code to", data.user.zip);
 });
 
 app.start();
