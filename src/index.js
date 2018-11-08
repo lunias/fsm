@@ -1,14 +1,52 @@
 const machina = require('machina');
 const readline = require('readline');
 
+const hoursFsm = function() {
+    let fsm = new machina.Fsm({
+        initialState: "prompt",
+        states: {
+            "prompt": {
+                _onEnter: function() {
+
+                },
+                "*": function() {
+                    console.log('hours');
+                }
+            }
+        }
+    });
+    return fsm;
+};
+
+const locationFsm = function() {
+    let fsm = new machina.Fsm({
+        initialState: "prompt",
+        states: {
+            "prompt": {
+                _onEnter: function() {
+
+                },
+                "*": function() {
+                    console.log('location');
+                }
+            }
+        }
+    });
+    return fsm;
+};
+
 const app = new machina.Fsm({
     initialize: function(options) {
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
+        this.fsms = [hoursFsm, locationFsm].reduce((map, fsm) => {
+            map[fsm.name] = fsm;
+            return map;
+        }, {});
     },
-    namespace: "fsm",
+    namespace: "app",
     initialState: "uninitialized",
     states: {
         uninitialized: {
@@ -32,7 +70,7 @@ const app = new machina.Fsm({
                             };
                             this.transition("authenticated");
                         } else {
-                            console.log("Could not login with provided credentials");
+                            console.log("Could not login with provided credentials.");
                             this.handle("loginPrompt");
                         }
                     });
@@ -44,27 +82,31 @@ const app = new machina.Fsm({
         },
         authenticated: {
             _onEnter: function() {
-                this.emit("login", {
-                    user: this.user,
+                this.emit('login', {
+                    user: this.user
                 });
-                console.log("Welcome back '" + this.user.username + "'");
-                this.handle("query");
+                console.log("Welcome back '" + this.user.username + "'.");
+                this.handle('prompt');
             },
-            query: function() {
-                this.rl.question('What are you looking for today? ', (query) => {
-                    if (query === 'logout') {
-                        this.transition("anonymous");
+            prompt: function() {
+                this.rl.question('hours, location, or logout? ', (hoursOrLocation) => {
+                    if (hoursOrLocation === 'logout') {
+                        this.transition('anonymous');
+                    } else if (hoursOrLocation == 'hours') {
+                        this.fsms['hoursFsm']().handle('');
+                    } else if (hoursOrLocation == 'location') {
+                        this.fsms['locationFsm']().handle('');
                     } else {
-                        this.emit("query", {
-                            query: query,
-                            user: this.user
-                        });
-                        this.handle("query");
+                        console.log('I didn\'t understand.');
+                        this.handle('prompt');
                     }
                 });
             },
             _onExit: function() {
-                this.user = undefined;
+              this.emit('logout', {
+                user: this.user
+              });
+              this.user = undefined;
             }
         }
     },
@@ -84,8 +126,8 @@ app.on("login", function(data) {
     console.log("got login event", data);
 });
 
-app.on("query", function(data) {
-    console.log("dispatching query", data.query);
+app.on("logout", function(data) {
+  console.log("got logout event", data);
 });
 
 app.start();
