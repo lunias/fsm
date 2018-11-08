@@ -10,9 +10,9 @@ const hoursFsm = function(app) {
                     let user = app.user;
                     if (user.zip) {
                         console.log("hours are 08:00 to 18:00 at your nearest location");
-                        app.handle('prompt');
+                        app.prompt('prompt');
                     } else {
-                        app.getFsm('locationFsm').prompt(this);
+                        app.getFsm(locationFsm.name).prompt(this);
                     }
                 }
             }
@@ -43,7 +43,7 @@ const locationFsm = function(app) {
                     let user = app.user;
                     if (user.zip) {
                         console.log("nearest location found for zip:", user.zip);
-                        app.handle('prompt');
+                        app.prompt('prompt');
                     } else {
                         if (!invokingFsm) {
                             invokingFsm = this;
@@ -94,7 +94,7 @@ const app = new machina.Fsm({
         anonymous: {
             _onEnter: function() {
                 console.log("Welcome anonymous user.");
-                this.handle("login");
+                this.login();
             },
             login: function() {
                 this.rl.question('Username: ', (username) => {
@@ -107,7 +107,7 @@ const app = new machina.Fsm({
                             this.transition("authenticated");
                         } else {
                             console.log("Could not login with provided credentials.");
-                            this.handle("login");
+                            this.login();
                         }
                     });
                 });
@@ -119,19 +119,19 @@ const app = new machina.Fsm({
                     user: this.user
                 });
                 console.log("Welcome back '" + this.user.username + "'.");
-                this.handle('prompt');
+                this.prompt();
             },
             prompt: function() {
                 this.rl.question('hours, location, or logout? ', (hoursOrLocation) => {
                     if (hoursOrLocation === 'logout') {
                         this.transition('anonymous');
                     } else if (hoursOrLocation == 'hours') {
-                        this.getFsm('hoursFsm').prompt();
+                        this.getFsm(hoursFsm.name).prompt();
                     } else if (hoursOrLocation == 'location') {
-                        this.getFsm('locationFsm').prompt();
+                        this.getFsm(locationFsm.name).prompt();
                     } else {
                         console.log('I didn\'t understand.');
-                        this.handle('prompt');
+                        this.prompt();
                     }
                 });
             },
@@ -145,6 +145,12 @@ const app = new machina.Fsm({
     },
     start: function() {
         this.handle("start");
+    },
+    login: function() {
+        this.handle("login");
+    },
+    prompt: function() {
+        this.handle("prompt");
     }
 });
 
