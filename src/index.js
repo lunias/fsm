@@ -1,35 +1,57 @@
 const machina = require('machina');
 const readline = require('readline');
 
-const hoursFsm = function() {
+const hoursFsm = function(app) {
     let fsm = new machina.Fsm({
         initialState: "prompt",
         states: {
             "prompt": {
-                _onEnter: function() {
-
-                },
-                "*": function() {
-                    console.log('hours');
+                "prompt": function() {
+                    let user = app.user;
+                    if (user.zip) {
+                        console.log("hours are 08:00 to 18:00 at your nearest location");
+                        app.handle('prompt');
+                    } else {
+                        app.fsms['locationFsm'](app).prompt(this);
+                    }
                 }
             }
+        },
+        prompt: function() {
+            this.handle('prompt');
         }
     });
     return fsm;
 };
 
-const locationFsm = function() {
+const zipCodeQuestion = function(app, fsm) {
+    app.rl.question('what is your zip code? ', (zip) => {
+        app.user.zip = zip;
+        fsm.prompt(fsm);
+    });
+};
+
+const locationFsm = function(app) {
     let fsm = new machina.Fsm({
         initialState: "prompt",
         states: {
             "prompt": {
-                _onEnter: function() {
-
-                },
-                "*": function() {
-                    console.log('location');
+                "prompt": function(invokingFsm) {
+                    let user = app.user;
+                    if (user.zip) {
+                        console.log("nearest location found for zip:", user.zip);
+                        app.handle('prompt');
+                    } else {
+                        if (!invokingFsm) {
+                            invokingFsm = this;
+                        }
+                        zipCodeQuestion(app, invokingFsm);
+                    }
                 }
             }
+        },
+        prompt: function(invokingFsm) {
+            this.handle('prompt', invokingFsm);
         }
     });
     return fsm;
@@ -58,9 +80,9 @@ const app = new machina.Fsm({
         anonymous: {
             _onEnter: function() {
                 console.log("Welcome anonymous user.");
-                this.handle("loginPrompt");
+                this.handle("login");
             },
-            loginPrompt: function() {
+            login: function() {
                 this.rl.question('Username: ', (username) => {
                     this.rl.question('Password: ', (password) => {
                         if (password === 'asdf') {
@@ -71,13 +93,10 @@ const app = new machina.Fsm({
                             this.transition("authenticated");
                         } else {
                             console.log("Could not login with provided credentials.");
-                            this.handle("loginPrompt");
+                            this.handle("login");
                         }
                     });
                 });
-            },
-            _onExit: function() {
-
             }
         },
         authenticated: {
@@ -93,9 +112,9 @@ const app = new machina.Fsm({
                     if (hoursOrLocation === 'logout') {
                         this.transition('anonymous');
                     } else if (hoursOrLocation == 'hours') {
-                        this.fsms['hoursFsm']().handle('');
+                        this.fsms['hoursFsm'](this).prompt();
                     } else if (hoursOrLocation == 'location') {
-                        this.fsms['locationFsm']().handle('');
+                        this.fsms['locationFsm'](this).prompt();
                     } else {
                         console.log('I didn\'t understand.');
                         this.handle('prompt');
@@ -103,15 +122,12 @@ const app = new machina.Fsm({
                 });
             },
             _onExit: function() {
-              this.emit('logout', {
-                user: this.user
-              });
-              this.user = undefined;
+                this.emit('logout', {
+                    user: this.user
+                });
+                this.user = undefined;
             }
         }
-    },
-    reset: function() {
-        this.handle("_reset");
     },
     start: function() {
         this.handle("start");
@@ -127,8 +143,7 @@ app.on("login", function(data) {
 });
 
 app.on("logout", function(data) {
-  console.log("got logout event", data);
+    console.log("got logout event", data);
 });
 
 app.start();
-app.reset();
