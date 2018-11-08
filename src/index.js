@@ -12,7 +12,7 @@ const hoursFsm = function(app) {
                         console.log("hours are 08:00 to 18:00 at your nearest location");
                         app.handle('prompt');
                     } else {
-                        app.fsms['locationFsm'](app).prompt(this);
+                        app.getFsm('locationFsm').prompt(this);
                     }
                 }
             }
@@ -60,6 +60,10 @@ const locationFsm = function(app) {
     return fsm;
 };
 
+const isFunction = function(functionToCheck) {
+    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
+};
+
 const app = new machina.Fsm({
     initialize: function(options) {
         this.rl = readline.createInterface({
@@ -70,6 +74,13 @@ const app = new machina.Fsm({
             map[fsm.name] = fsm;
             return map;
         }, {});
+        this.getFsm = function(functionName) {
+            let fsm = this.fsms[functionName];
+            if (isFunction(fsm)) {
+                this.fsms[functionName] = fsm(app);
+            }
+            return this.fsms[functionName];
+        };
     },
     namespace: "app",
     initialState: "uninitialized",
@@ -115,9 +126,9 @@ const app = new machina.Fsm({
                     if (hoursOrLocation === 'logout') {
                         this.transition('anonymous');
                     } else if (hoursOrLocation == 'hours') {
-                        this.fsms['hoursFsm'](this).prompt();
+                        this.getFsm('hoursFsm').prompt();
                     } else if (hoursOrLocation == 'location') {
-                        this.fsms['locationFsm'](this).prompt();
+                        this.getFsm('locationFsm').prompt();
                     } else {
                         console.log('I didn\'t understand.');
                         this.handle('prompt');
@@ -150,7 +161,7 @@ app.on("logout", function(data) {
 });
 
 app.on("zipUpdated", function(data) {
-  console.log("updated user zip code to", data.user.zip);
+    console.log("updated user zip code to", data.user.zip);
 });
 
 app.start();
