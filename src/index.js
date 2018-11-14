@@ -1,6 +1,19 @@
 const machina = require('machina');
 const readline = require('readline');
 
+const UserRequest = require('./UserRequest.js');
+const Screen = require('./Screen.js');
+
+let request = new UserRequest.UserRequest({'shape': 'round', 'dimensions': '1920x1080'});
+
+let screen = request.getScreen();
+
+console.log(`size ${screen.getSize()} type ${screen.getType()}`);
+if (screen.Type.round === screen.getType()) {
+  console.log(`round screen`);
+}
+
+
 const hoursFsm = function(app) {
     let fsm = new machina.Fsm({
         initialState: "prompt",
