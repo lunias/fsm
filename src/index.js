@@ -1,15 +1,16 @@
 const machina = require('machina');
 const readline = require('readline');
 
-const UserRequest = require('./UserRequest.js');
-const Screen = require('./Screen.js');
+const UserRequest = require('./UserRequest');
+const Screen = require('./Screen');
 
-let request = new UserRequest.UserRequest({'shape': 'round', 'dimensions': '1920x1080'});
+let request = new UserRequest({'shape': 'round', 'dimensions': '1920x1080'});
 
 let screen = request.getScreen();
 
+console.log(`screen ${JSON.stringify(screen)}`);
 console.log(`size ${screen.getSize()} type ${screen.getType()}`);
-if (screen.Type.round === screen.getType()) {
+if (Screen.Type.round === screen.getType()) {
   console.log(`round screen`);
 }
 

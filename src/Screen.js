@@ -1,3 +1,6 @@
+const Type = Object.freeze({'round': 1, 'rectangle': 2});
+const Size = Object.freeze({'xsmall': 1, 'small': 2, 'medium': 3, 'large': 4, 'xlarge': 5});
+
 function Screen(type, size) {
 
   this._type = type;
@@ -6,15 +9,20 @@ function Screen(type, size) {
   let that = this;
 
   this.getType = () => {
-    return that.Type[that._type] || -1;
+    return Type[that._type] || -1;
   };
 
   this.getSize = () => {
-    return that.Size[that._size] || -1;
+    return Size[that._size] || -1;
+  };
+
+  this.isSupported = () => {
+    return that._type !== -1 && that._size !== -1;
   };
 }
 
-Screen.prototype.Type = Object.freeze({'round': 1, 'rectangle': 2});
-Screen.prototype.Size = Object.freeze({'xsmall': 1, 'small': 2, 'medium': 3, 'large': 4, 'xlarge': 5});
-
-exports.Screen = Screen;
+module.exports = {
+  Type,
+  Size,
+  Screen
+};
